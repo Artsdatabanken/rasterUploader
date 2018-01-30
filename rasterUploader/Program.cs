@@ -12,13 +12,12 @@ namespace rasterUploader
 {
     internal class Program
     {
+        private const int BytesPerPage = 512;
         private static string DirectoryPath { get; set; }
         private static string FilePath { get; set; }
         private static string ContainerReference { get; set; }
         private static string Key { get; set; }
         private static bool OnlyMetadata { get; set; }
-
-    private const int BytesPerPage = 512;
 
         private static void Main(string[] args)
         {
@@ -61,7 +60,7 @@ namespace rasterUploader
                         break;
                     case "-metadata":
                     case "-m":
-                        if(bool.TryParse(args[i + 1], out var b)) OnlyMetadata = b;
+                        if (bool.TryParse(args[i + 1], out var b)) OnlyMetadata = b;
                         break;
                 }
             }
@@ -98,7 +97,6 @@ namespace rasterUploader
 
         private static async Task UploadPageBlobAsync(CloudBlobContainer container, FileInfo file)
         {
-            
             var pageBlob = container.GetPageBlobReference(file.Name.Replace(".bin", ""));
 
             if (file.Length % BytesPerPage != 0)
@@ -129,7 +127,7 @@ namespace rasterUploader
             var writer = file.OpenWrite();
 
             writer.Seek(file.Length, SeekOrigin.Begin);
-            writer.WriteAsync(padding, 0, (int)neededPadding).Wait();
+            writer.WriteAsync(padding, 0, (int) neededPadding).Wait();
             writer.Close();
         }
 
