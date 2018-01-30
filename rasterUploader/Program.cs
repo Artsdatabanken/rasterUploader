@@ -139,6 +139,8 @@ namespace rasterUploader
 
             var nullvalue = GetNullValue(file);
 
+            pageBlob.Metadata["dataorigin"] = GetDataOrigin(file);
+
             if (nullvalue != string.Empty) pageBlob.Metadata["nullvalue"] = nullvalue;
 
             foreach (var line in File.ReadLines(headerFile))
@@ -166,13 +168,9 @@ namespace rasterUploader
                         switch (lineSplit[1].Trim())
                         {
                             case "1":
-                                pageBlob.Metadata["valuelength"] = "1";
-                                break;
                             case "2":
-                                pageBlob.Metadata["valuelength"] = "2";
-                                break;
                             case "4":
-                                pageBlob.Metadata["valuelength"] = "4";
+                                pageBlob.Metadata["valuelength"] = lineSplit[1].Trim();
                                 break;
                             case "5":
                                 pageBlob.Metadata["valuelength"] = "8";
@@ -189,6 +187,12 @@ namespace rasterUploader
              ParseHeaderDouble(pageBlob.Metadata["columnlength"])).ToString(CultureInfo.InvariantCulture);
 
             pageBlob.SetMetadataAsync().Wait();
+        }
+
+        private static string GetDataOrigin(FileSystemInfo file)
+        {
+            var metadataFile = file.FullName.Replace(".bin", ".md");
+            return !File.Exists(metadataFile) ? string.Empty : File.ReadAllText(metadataFile).Trim();
         }
 
         private static string GetNullValue(FileSystemInfo file)
