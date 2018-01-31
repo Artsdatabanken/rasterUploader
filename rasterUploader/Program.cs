@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Newtonsoft.Json;
 
 namespace rasterUploader
 {
@@ -139,7 +140,11 @@ namespace rasterUploader
 
             var nullvalue = GetNullValue(file);
 
-            pageBlob.Metadata["dataorigin"] = GetDataOrigin(file);
+            foreach (var record in GetMetadata(file))
+            {
+                if(record.Value == null) continue;
+                pageBlob.Metadata[record.Key] = Uri.EscapeDataString(record.Value);
+            }
 
             if (nullvalue != string.Empty) pageBlob.Metadata["nullvalue"] = nullvalue;
 
@@ -189,10 +194,10 @@ namespace rasterUploader
             pageBlob.SetMetadataAsync().Wait();
         }
 
-        private static string GetDataOrigin(FileSystemInfo file)
+        private static Dictionary<string, string> GetMetadata(FileSystemInfo file)
         {
-            var metadataFile = file.FullName.Replace(".bin", ".md");
-            return !File.Exists(metadataFile) ? string.Empty : File.ReadAllText(metadataFile).Trim();
+            var metadataFile = file.FullName.Replace(".bin", ".md.json");
+            return !File.Exists(metadataFile) ? null : JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(metadataFile).Trim());
         }
 
         private static string GetNullValue(FileSystemInfo file)
