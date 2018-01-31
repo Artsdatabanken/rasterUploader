@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.WindowsAzure.Storage;
@@ -191,6 +192,10 @@ namespace rasterUploader
             (ParseHeaderDouble(pageBlob.Metadata["maxy"]) - ParseHeaderDouble(pageBlob.Metadata["resolution"]) *
              ParseHeaderDouble(pageBlob.Metadata["columnlength"])).ToString(CultureInfo.InvariantCulture);
 
+            var description = PagesFetcher.Get(pageBlob.Name);
+
+            if (description != null) pageBlob.Metadata["article"] = description;
+
             pageBlob.SetMetadataAsync().Wait();
         }
 
@@ -216,6 +221,23 @@ namespace rasterUploader
                 double.TryParse(value.Replace('.', ','), out parseValue);
 
             return parseValue;
+        }
+
+        public class PagesFetcher
+        {
+            private const string PagePattern = "http://data.beta.artsdatabanken.no/api/Graph/Nodes/";
+            private const string BaseUrl = "https://www.artsdatabanken.no/Pages/";
+
+            public static string Get(string key)
+            {
+                var client = new HttpClient();
+                var response = client.GetAsync("http://data.beta.artsdatabanken.no/api/Graph/NiN2.0/" + key).Result;
+                var jsonString = response.Content.ReadAsStringAsync().Result;
+                if (!jsonString.Contains(PagePattern)) return null;
+                var split = jsonString.Split(PagePattern)[1];
+                var page = split.Split('"')[0];
+                return Uri.EscapeDataString(BaseUrl + page);
+            }
         }
     }
 }
